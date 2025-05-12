@@ -14,7 +14,7 @@ app.use(express.json());
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: 'root',
+  password: 'xjh19810914',
   database: 'studentinfo',
   waitForConnections: true,
   connectionLimit: 10,
