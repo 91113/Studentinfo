@@ -14,11 +14,21 @@ app.use(express.json());
 const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
-  password: 'xjh19810914',
+  password: 'root',
   database: 'studentinfo',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
+});
+
+// 在创建连接池后添加
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.error('Database connection error:', err);
+    return;
+  }
+  console.log('Database connected successfully');
+  connection.release();
 });
 
 // 登录接口
@@ -26,10 +36,14 @@ app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   
   try {
+    console.log('Attempting login for user:', username);
+    
     const [rows] = await pool.promise().query(
       'SELECT * FROM users WHERE username = ? AND password = ?',
       [username, password]
     );
+
+    console.log('Query result:', rows);
 
     if (rows.length > 0) {
       const user = rows[0];
@@ -48,10 +62,26 @@ app.post('/api/login', async (req, res) => {
       });
     }
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: '服务器错误'
-    });
+    console.error('Login error:', error);
+    if (error.response) {
+      console.error('Error response:', error.response.data);
+      res.status(500).json({
+        success: false,
+        message: error.response.data.message || '登录失败，请稍后重试'
+      });
+    } else if (error.request) {
+      console.error('No response received');
+      res.status(500).json({
+        success: false,
+        message: '无法连接到服务器，请检查网络连接'
+      });
+    } else {
+      console.error('Request error:', error.message);
+      res.status(500).json({
+        success: false,
+        message: '登录请求失败，请稍后重试'
+      });
+    }
   }
 });
 
